@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #fafaf9;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --border: rgba(10, 10, 10, 0.1);
+  --muted: #f0efec;
+  --muted-foreground: #6b6a66;
+
+  --accent: #0f766e;
+  --accent-foreground: #ffffff;
+
+  --positive: #0f766e;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+
+  --radius: 14px;
+
+  /* Category identity palette — validated for CVD safety, see dataviz skill */
+  --cat-food: #2a78d6;
+  --cat-transport: #1baf7a;
+  --cat-rent: #eda100;
+  --cat-utilities: #008300;
+  --cat-shopping: #4a3aa7;
+  --cat-health: #e34948;
+  --cat-entertainment: #e87ba4;
+  --cat-misc: #eb6834;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafaf9;
+  --card: #141413;
+  --card-foreground: #fafaf9;
+  --border: rgba(255, 255, 255, 0.1);
+  --muted: #1c1c1a;
+  --muted-foreground: #a3a29c;
+
+  --accent: #14b8a6;
+  --accent-foreground: #06201d;
+
+  --positive: #2dd4bf;
+  --warning: #fbbf24;
+  --warning-foreground: #201400;
+
+  --cat-food: #3987e5;
+  --cat-transport: #199e70;
+  --cat-rent: #c98500;
+  --cat-utilities: #1a9b1a;
+  --cat-shopping: #9085e9;
+  --cat-health: #e66767;
+  --cat-entertainment: #d55181;
+  --cat-misc: #d95926;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-cat-food: var(--cat-food);
+  --color-cat-transport: var(--cat-transport);
+  --color-cat-rent: var(--cat-rent);
+  --color-cat-utilities: var(--cat-utilities);
+  --color-cat-shopping: var(--cat-shopping);
+  --color-cat-health: var(--cat-health);
+  --color-cat-entertainment: var(--cat-entertainment);
+  --color-cat-misc: var(--cat-misc);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 8px);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    background: var(--background);
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
