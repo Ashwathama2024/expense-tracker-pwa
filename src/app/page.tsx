@@ -7,13 +7,17 @@ import { Button } from "@/components/ui/button";
 import { RunningTotal } from "@/components/home/RunningTotal";
 import { RecentExpenses } from "@/components/home/RecentExpenses";
 import { AddExpenseSheet } from "@/components/home/AddExpenseSheet";
+import { ReceiptReviewSheet } from "@/components/home/ReceiptReviewSheet";
 import { useAllExpenses } from "@/lib/hooks";
 import type { Expense } from "@/lib/db";
+import type { ParsedTransaction } from "@/lib/openai";
 
 export default function HomePage() {
   const expenses = useAllExpenses();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [scanned, setScanned] = useState<ParsedTransaction[]>([]);
 
   function openAdd() {
     setEditing(null);
@@ -23,6 +27,11 @@ export default function HomePage() {
   function openEdit(expense: Expense) {
     setEditing(expense);
     setSheetOpen(true);
+  }
+
+  function handleScanned(transactions: ParsedTransaction[]) {
+    setScanned(transactions);
+    setReviewOpen(true);
   }
 
   return (
@@ -46,6 +55,14 @@ export default function HomePage() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         editingExpense={editing}
+        onScanned={handleScanned}
+      />
+
+      <ReceiptReviewSheet
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        transactions={scanned}
+        onSaved={() => setScanned([])}
       />
     </div>
   );

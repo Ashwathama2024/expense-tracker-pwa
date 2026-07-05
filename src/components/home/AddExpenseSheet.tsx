@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CategorySelect } from "@/components/CategorySelect";
 import { addExpense, updateExpense } from "@/lib/expenses";
-import { parseReceiptImage } from "@/lib/openai";
+import { parseReceiptTransactions, type ParsedTransaction } from "@/lib/openai";
 import { todayISO, cn } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
 import type { Expense } from "@/lib/db";
@@ -19,6 +19,10 @@ interface AddExpenseSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingExpense?: Expense | null;
+  /** Called with parsed transactions when a receipt/screenshot scan succeeds
+   * (only offered when adding, not editing). The parent shows a review list
+   * and does the actual saving — a scan can contain more than one expense. */
+  onScanned?: (transactions: ParsedTransaction[]) => void;
 }
 
 const EMPTY_FORM = {
@@ -32,6 +36,7 @@ export function AddExpenseSheet({
   open,
   onOpenChange,
   editingExpense,
+  onScanned,
 }: AddExpenseSheetProps) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -62,18 +67,15 @@ export function AddExpenseSheet({
     if (!file) return;
     setParsing(true);
     try {
-      const parsed = await parseReceiptImage(file);
-      setForm((prev) => ({
-        amount: parsed.amount != null ? String(parsed.amount) : prev.amount,
-        category: parsed.category ?? prev.category,
-        date: parsed.date ?? prev.date,
-        note: parsed.note ?? prev.note,
-      }));
-      toast.message("Receipt scanned — review before saving", {
-        description: "Amount, category and date were pre-filled from the image.",
-      });
+      const transactions = await parseReceiptTransactions(file);
+      if (transactions.length === 0) {
+        toast.error("Couldn't find a transaction in that file.");
+        return;
+      }
+      onScanned?.(transactions);
+      onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't read that receipt.");
+      toast.error(err instanceof Error ? err.message : "Couldn't read that file.");
     } finally {
       setParsing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -141,7 +143,7 @@ export function AddExpenseSheet({
                 <Label htmlFor="amount">Amount</Label>
                 <div className="relative mt-1.5">
                   <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-muted-foreground">
-                    $
+                    ₹
                   </span>
                   <Input
                     id="amount"
@@ -156,29 +158,32 @@ export function AddExpenseSheet({
                   />
                 </div>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => handleFile(e.target.files?.[0])}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="mb-0.5 h-11 w-11 shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={parsing}
-                aria-label="Scan receipt"
-              >
-                {parsing ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Camera className="h-5 w-5" />
-                )}
-              </Button>
+              {!editingExpense && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => handleFile(e.target.files?.[0])}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="mb-0.5 h-11 w-11 shrink-0"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={parsing}
+                    aria-label="Scan receipt, screenshot, or PDF"
+                  >
+                    {parsing ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Camera className="h-5 w-5" />
+                    )}
+                  </Button>
+                </>
+              )}
             </div>
 
             <div>

@@ -1,5 +1,6 @@
 import { CATEGORIES, type Category } from "./categories";
 import { getOpenAIKey } from "./settings";
+import { fileToImageDataUrl } from "./pdf";
 
 // SECURITY TRADEOFF: this is a client-side-only PWA with no backend, so the
 // OpenAI API key has to live in the browser to make this call — either typed
@@ -9,23 +10,16 @@ import { getOpenAIKey } from "./settings";
 // single-user tool — do not reuse this pattern for anything multi-user.
 const MODEL = "gpt-5-nano";
 
-export interface ParsedReceipt {
+export interface ParsedTransaction {
   amount: number | null;
   category: Category | null;
   date: string | null;
   note: string | null;
 }
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-export async function parseReceiptImage(file: File): Promise<ParsedReceipt> {
+export async function parseReceiptTransactions(
+  file: File
+): Promise<ParsedTransaction[]> {
   const apiKey = getOpenAIKey() || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -33,7 +27,7 @@ export async function parseReceiptImage(file: File): Promise<ParsedReceipt> {
     );
   }
 
-  const dataUrl = await fileToDataUrl(file);
+  const dataUrl = await fileToImageDataUrl(file);
   const today = new Date().toISOString().slice(0, 10);
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -48,19 +42,24 @@ export async function parseReceiptImage(file: File): Promise<ParsedReceipt> {
         {
           role: "system",
           content:
-            "You extract structured expense data from a photo of a receipt or a payment app screenshot. " +
-            `Respond with strict JSON only: {"amount": number|null, "category": one of [${CATEGORIES.join(
+            "You extract structured expense data from a photo of a receipt, an invoice, or a payment " +
+            "app screenshot (e.g. Google Pay / UPI). The image may show a SINGLE purchase or a LIST of " +
+            "several separate transactions (e.g. a payment history/statement screen) — find every " +
+            "distinct transaction visible and return one entry per transaction, oldest or top-of-screen " +
+            "first. " +
+            `Respond with strict JSON only: {"transactions": [{"amount": number|null, "category": one of [${CATEGORIES.join(
               ", "
-            )}]|null, "date": "YYYY-MM-DD"|null, "note": string|null}. ` +
-            `"note" should be a short merchant or item description (a few words). ` +
-            `If a date isn't visible, use null rather than guessing. Today's date is ${today}.`,
+            )}]|null, "date": "YYYY-MM-DD"|null, "note": string|null}, ...]}. ` +
+            `"note" should be a short merchant or payee name (a few words). ` +
+            `If a date isn't visible for an entry, use null rather than guessing. Today's date is ${today}. ` +
+            `If you can't find any transaction, return {"transactions": []}.`,
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the expense details from this image.",
+              text: "Extract every expense transaction from this image.",
             },
             {
               type: "image_url",
@@ -83,14 +82,18 @@ export async function parseReceiptImage(file: File): Promise<ParsedReceipt> {
   if (!content) throw new Error("OpenAI response had no content.");
 
   const parsed = JSON.parse(content);
-  const category: Category | null = CATEGORIES.includes(parsed.category)
-    ? parsed.category
-    : null;
+  const rows: unknown[] = Array.isArray(parsed.transactions) ? parsed.transactions : [];
 
-  return {
-    amount: typeof parsed.amount === "number" ? parsed.amount : null,
-    category,
-    date: typeof parsed.date === "string" ? parsed.date : null,
-    note: typeof parsed.note === "string" ? parsed.note : null,
-  };
+  return rows.map((row) => {
+    const r = row as Record<string, unknown>;
+    const category: Category | null = CATEGORIES.includes(r.category as Category)
+      ? (r.category as Category)
+      : null;
+    return {
+      amount: typeof r.amount === "number" ? r.amount : null,
+      category,
+      date: typeof r.date === "string" ? r.date : null,
+      note: typeof r.note === "string" ? r.note : null,
+    };
+  });
 }
