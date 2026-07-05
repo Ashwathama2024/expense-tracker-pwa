@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PinGate } from "@/components/pin/PinGate";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ApiKeySettings } from "@/components/ApiKeySettings";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,6 +17,12 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// Next's Metadata API doesn't prefix icon/apple URLs with `basePath` the way
+// it does for JS/CSS assets, so on a GitHub Pages project site (served under
+// /repo-name/) these would 404 without this manual prefix — breaking PWA
+// installability (Chrome can't validate a manifest whose icons don't load).
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
   title: "Expenses",
@@ -28,10 +35,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: `${basePath}/icons/icon-192.png`, sizes: "192x192", type: "image/png" },
+      { url: `${basePath}/icons/icon-512.png`, sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [{ url: `${basePath}/icons/apple-touch-icon.png`, sizes: "180x180" }],
   },
 };
 
@@ -77,7 +84,8 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <PinGate>
           <div className="flex min-h-screen flex-col pb-20">
-            <header className="flex items-center justify-end px-4 pt-3">
+            <header className="flex items-center justify-end gap-1 px-4 pt-3">
+              <ApiKeySettings />
               <ThemeToggle />
             </header>
             {children}

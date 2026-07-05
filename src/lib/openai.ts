@@ -1,11 +1,12 @@
 import { CATEGORIES, type Category } from "./categories";
+import { getOpenAIKey } from "./settings";
 
 // SECURITY TRADEOFF: this is a client-side-only PWA with no backend, so the
-// OpenAI API key must be exposed to the browser (NEXT_PUBLIC_*) to make this
-// call. It will be visible in devtools/network requests to anyone with access
-// to this device. Acceptable for a personal, single-user tool — do not reuse
-// this pattern for anything multi-user.
-const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+// OpenAI API key has to live in the browser to make this call — either typed
+// into Settings (stored in localStorage) or baked in at build time via
+// NEXT_PUBLIC_OPENAI_API_KEY. Either way it's visible in devtools/network
+// requests to anyone with access to this device. Acceptable for a personal,
+// single-user tool — do not reuse this pattern for anything multi-user.
 const MODEL = "gpt-5-nano";
 
 export interface ParsedReceipt {
@@ -25,9 +26,10 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 export async function parseReceiptImage(file: File): Promise<ParsedReceipt> {
-  if (!OPENAI_API_KEY) {
+  const apiKey = getOpenAIKey() || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+  if (!apiKey) {
     throw new Error(
-      "Missing NEXT_PUBLIC_OPENAI_API_KEY. Add it to .env.local to enable receipt parsing."
+      "No OpenAI API key set. Tap the key icon at the top of the app to add one."
     );
   }
 
@@ -38,7 +40,7 @@ export async function parseReceiptImage(file: File): Promise<ParsedReceipt> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: MODEL,

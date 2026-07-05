@@ -11,14 +11,19 @@ account system, just a local PIN gate.
 
 ```bash
 npm install
-cp .env.local.example .env.local   # then fill in NEXT_PUBLIC_OPENAI_API_KEY
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Receipt scanning
 (camera icon on the add-expense form) needs an OpenAI API key with access to
-`gpt-5-nano`; without one, everything else works and that feature just
-surfaces a toast telling you the key is missing.
+`gpt-5-nano` — tap the **key icon** at the top of the app and paste it in;
+it's saved to this device's localStorage, no rebuild or redeploy needed.
+Without one, everything else works and that button just surfaces a toast
+telling you no key is set.
+
+(`.env.local.example` / `NEXT_PUBLIC_OPENAI_API_KEY` still works as a
+build-time fallback if you'd rather bake a key in — the in-app key takes
+precedence when both are set.)
 
 ## Deploying (GitHub Pages / Cloudflare Pages)
 
@@ -40,17 +45,17 @@ since this is a project site — enable it once under repo Settings → Pages �
 Source → "GitHub Actions". Live at:
 **https://ashwathama2024.github.io/expense-tracker-pwa/**
 
-To enable receipt scanning on the deployed site, add a repo secret named
-`OPENAI_API_KEY` (Settings → Secrets and variables → Actions) — the workflow
-passes it through as `NEXT_PUBLIC_OPENAI_API_KEY` at build time.
+To enable receipt scanning, open the deployed site and tap the key icon in
+the header — no rebuild needed. (A repo secret named `OPENAI_API_KEY` also
+works as a build-time fallback if you prefer that instead.)
 
 After deploying, open the site in Chrome on a phone — it should offer
 "Install app" / "Add to Home Screen". First open will ask you to set a PIN.
 
 ## Security note
 
-The OpenAI key is a `NEXT_PUBLIC_*` env var, which means it's bundled into
-the client JS and visible in devtools/network requests. That's an accepted
-tradeoff for a client-only, single-user tool — see the comment in
-`.env.local.example` and `src/lib/openai.ts`. Don't reuse this pattern for
-anything multi-user.
+The OpenAI key, wherever it comes from (in-app Settings or a build-time
+`NEXT_PUBLIC_*` env var), lives in the browser — visible in devtools/network
+requests to anyone with access to this device. That's an accepted tradeoff
+for a client-only, single-user tool — see the comments in `src/lib/openai.ts`
+and `src/lib/settings.ts`. Don't reuse this pattern for anything multi-user.
