@@ -114,62 +114,48 @@ export function cumulativeStats(expenses: Expense[]): CumulativeStats {
   };
 }
 
-export function quarterOfDate(dateISO: string): { year: number; quarter: number } {
-  const [y, m] = dateISO.split("-").map(Number);
-  return { year: y, quarter: Math.ceil(m / 3) };
-}
-
-function quarterKey(dateISO: string): string {
-  const { year, quarter } = quarterOfDate(dateISO);
-  return `${year}-Q${quarter}`;
-}
-
-export function quarterRange(year: number, quarter: number): { start: string; end: string } {
-  const startMonth = (quarter - 1) * 3;
-  return {
-    start: toISO(new Date(year, startMonth, 1)),
-    end: toISO(new Date(year, startMonth + 3, 0)),
-  };
-}
-
-export interface QuarterPoint {
-  key: string;
+export interface DayOfWeekPoint {
+  day: number; // 0 = Sun … 6 = Sat
   label: string;
-  year: number;
-  quarter: number;
   total: number;
-  start: string;
-  end: string;
+  occurrences: number;
+  average: number;
 }
 
-export function quarterlyTotals(expenses: Expense[], quartersBack = 4): QuarterPoint[] {
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // display Mon..Sun
+
+/** Average spend per weekday over the trailing `daysBack` days (default ~13
+ * weeks) — a fixed recent window so the pattern reflects current habits
+ * rather than being diluted by however much history happens to exist. */
+export function dayOfWeekTotals(expenses: Expense[], daysBack = 90): DayOfWeekPoint[] {
   const now = new Date();
-  let quarter = Math.floor(now.getMonth() / 3) + 1;
-  let year = now.getFullYear();
+  const start = new Date(now);
+  start.setDate(start.getDate() - (daysBack - 1));
+  const startISO = toISO(start);
+  const todayISOStr = toISO(now);
 
-  const list: { year: number; quarter: number }[] = [];
-  for (let i = 0; i < quartersBack; i++) {
-    list.unshift({ year, quarter });
-    quarter -= 1;
-    if (quarter < 1) {
-      quarter = 4;
-      year -= 1;
-    }
+  const totals = new Array(7).fill(0);
+  const occurrences = new Array(7).fill(0);
+
+  const cursor = new Date(start);
+  while (toISO(cursor) <= todayISOStr) {
+    occurrences[cursor.getDay()] += 1;
+    cursor.setDate(cursor.getDate() + 1);
   }
 
-  const points: QuarterPoint[] = list.map(({ year, quarter }) => ({
-    key: `${year}-Q${quarter}`,
-    label: `Q${quarter} '${String(year).slice(2)}`,
-    year,
-    quarter,
-    total: 0,
-    ...quarterRange(year, quarter),
-  }));
-
-  const byKey = new Map(points.map((p) => [p.key, p]));
   for (const e of expenses) {
-    const bucket = byKey.get(quarterKey(e.date));
-    if (bucket) bucket.total += e.amount;
+    if (e.date < startISO || e.date > todayISOStr) continue;
+    const [y, m, d] = e.date.split("-").map(Number);
+    const dow = new Date(y, m - 1, d).getDay();
+    totals[dow] += e.amount;
   }
-  return points;
+
+  return WEEKDAY_ORDER.map((day) => ({
+    day,
+    label: WEEKDAY_LABELS[day],
+    total: totals[day],
+    occurrences: occurrences[day],
+    average: occurrences[day] > 0 ? totals[day] / occurrences[day] : 0,
+  }));
 }

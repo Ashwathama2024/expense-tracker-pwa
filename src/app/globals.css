@@ -30,6 +30,18 @@
   --cat-health: #e34948;
   --cat-entertainment: #e87ba4;
   --cat-misc: #eb6834;
+
+  /* Soft pastel tones — decorative variety for stat tiles / nav, never used
+     to encode data (so no CVD-safety requirement, unlike the category palette
+     above). Kept light and desaturated on purpose: no saturated/neon tones. */
+  --tile-teal-bg: #dff4f0;
+  --tile-teal-fg: #0f766e;
+  --tile-blue-bg: #e1edfd;
+  --tile-blue-fg: #2f5fa8;
+  --tile-amber-bg: #fdf1d9;
+  --tile-amber-fg: #92650a;
+  --tile-violet-bg: #ece5fb;
+  --tile-violet-fg: #6b4fc7;
 }
 
 .dark {
@@ -56,6 +68,15 @@
   --cat-health: #e66767;
   --cat-entertainment: #d55181;
   --cat-misc: #d95926;
+
+  --tile-teal-bg: #163430;
+  --tile-teal-fg: #4fd1c0;
+  --tile-blue-bg: #1c2b3f;
+  --tile-blue-fg: #82b0f5;
+  --tile-amber-bg: #362a12;
+  --tile-amber-fg: #f0b642;
+  --tile-violet-bg: #2a2140;
+  --tile-violet-fg: #b79cf0;
 }
 
 @theme inline {
@@ -80,6 +101,15 @@
   --color-cat-health: var(--cat-health);
   --color-cat-entertainment: var(--cat-entertainment);
   --color-cat-misc: var(--cat-misc);
+
+  --color-tile-teal-bg: var(--tile-teal-bg);
+  --color-tile-teal-fg: var(--tile-teal-fg);
+  --color-tile-blue-bg: var(--tile-blue-bg);
+  --color-tile-blue-fg: var(--tile-blue-fg);
+  --color-tile-amber-bg: var(--tile-amber-bg);
+  --color-tile-amber-fg: var(--tile-amber-fg);
+  --color-tile-violet-bg: var(--tile-violet-bg);
+  --color-tile-violet-fg: var(--tile-violet-fg);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 4px);
