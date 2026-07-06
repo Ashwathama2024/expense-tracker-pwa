@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BarChart3, ListOrdered } from "lucide-react";
+import { Home, BarChart3, ListOrdered, TrendingUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/", label: "Home", icon: Home },
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { href: "/insights", label: "Insights", icon: TrendingUp },
   { href: "/history", label: "History", icon: ListOrdered },
 ];
 

@@ -10,12 +10,23 @@ export interface Expense {
   createdAt: number;
 }
 
+export interface Budget {
+  category: Category; // primary key — one budget per category
+  monthlyLimit: number;
+}
+
 const db = new Dexie("expense-tracker") as Dexie & {
   expenses: EntityTable<Expense, "id">;
+  budgets: EntityTable<Budget, "category">;
 };
 
 db.version(1).stores({
   expenses: "++id, amount, category, date, note, createdAt",
+});
+
+db.version(2).stores({
+  expenses: "++id, amount, category, date, note, createdAt",
+  budgets: "category",
 });
 
 export { db };
