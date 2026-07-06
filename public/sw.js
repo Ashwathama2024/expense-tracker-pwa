@@ -21,11 +21,30 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Web Share Target: Android's share sheet POSTs the shared file here. There's
+// no server (static export), so this intercepts the POST entirely client-side,
+// stashes the file in the versioned cache, and redirects to the app, which
+// picks it up and runs it through the same receipt-scan flow as a manual pick.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return;
-
   const url = new URL(request.url);
+
+  if (request.method === "POST" && url.pathname.endsWith("/share-target")) {
+    event.respondWith(
+      (async () => {
+        const formData = await request.formData();
+        const file = formData.get("file");
+        if (file) {
+          const cache = await caches.open(CACHE_VERSION);
+          await cache.put("/__shared-file", new Response(file));
+        }
+        return Response.redirect("./?shared=1", 303);
+      })()
+    );
+    return;
+  }
+
+  if (request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
