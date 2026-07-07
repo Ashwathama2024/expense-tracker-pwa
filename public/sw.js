@@ -1,6 +1,9 @@
 // Minimal hand-rolled service worker (manual, per project spec — no next-pwa
 // dependency). Caches the app shell for offline use after first visit.
-const CACHE_VERSION = "expense-tracker-v1";
+//
+// Bump this string whenever you need to force every client to drop its old
+// cache (e.g. after this fix, which changed the caching strategy itself).
+const CACHE_VERSION = "expense-tracker-v2";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -47,31 +50,41 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
 
-  if (request.mode === "navigate") {
+  // Next.js's own JS/CSS chunks are content-hashed (the filename changes
+  // whenever the content does), so a cached copy is never stale — safe to
+  // serve cache-first and only hit the network on a cache miss.
+  const isHashedAsset = url.pathname.includes("/_next/static/");
+  if (isHashedAsset) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          })
+      )
     );
     return;
   }
 
+  // Everything else (HTML pages, manifest.json, /icons/*, sw.js) keeps the
+  // *same* URL across deploys while its content changes — so it must always
+  // be network-first, falling back to a cached copy only when actually
+  // offline. Serving these cache-first (the old behavior) meant a changed
+  // icon or manifest could stay stuck behind a stale cached copy forever.
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const networkFetch = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
   );
 });
