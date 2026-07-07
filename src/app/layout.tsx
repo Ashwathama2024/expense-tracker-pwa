@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { MotionConfig } from "framer-motion";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { Toaster } from "@/components/ui/sonner";
@@ -7,6 +8,7 @@ import { PinGate } from "@/components/pin/PinGate";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiKeySettings } from "@/components/ApiKeySettings";
+import { BackupSettings } from "@/components/BackupSettings";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -81,18 +83,21 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <ServiceWorkerRegister />
-        <PinGate>
-          <div className="flex min-h-screen flex-col pb-20">
-            <header className="flex items-center justify-end gap-1 px-4 pt-3">
-              <ApiKeySettings />
-              <ThemeToggle />
-            </header>
-            {children}
-          </div>
-          <BottomNav />
-        </PinGate>
-        <Toaster />
+        <MotionConfig reducedMotion="user">
+          <ServiceWorkerRegister />
+          <PinGate>
+            <div className="flex min-h-screen flex-col pb-20">
+              <header className="flex items-center justify-end gap-1 px-4 pt-3">
+                <BackupSettings />
+                <ApiKeySettings />
+                <ThemeToggle />
+              </header>
+              {children}
+            </div>
+            <BottomNav />
+          </PinGate>
+          <Toaster />
+        </MotionConfig>
       </body>
     </html>
   );

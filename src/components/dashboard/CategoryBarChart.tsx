@@ -5,6 +5,7 @@ import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { CATEGORY_META, categoryColor } from "@/lib/categories";
 import type { CategoryTotal } from "@/lib/dashboard";
+import { usePrefersReducedMotion } from "@/lib/hooks";
 import { formatCurrency } from "@/lib/utils";
 
 interface BarShapeProps {
@@ -17,6 +18,7 @@ interface BarShapeProps {
 }
 
 function AnimatedBar({ x = 0, y = 0, width = 0, height = 0, fill, index = 0 }: BarShapeProps) {
+  const reducedMotion = usePrefersReducedMotion();
   return (
     <motion.rect
       x={x}
@@ -25,9 +27,13 @@ function AnimatedBar({ x = 0, y = 0, width = 0, height = 0, fill, index = 0 }: B
       rx={4}
       ry={4}
       fill={fill}
-      initial={{ width: 0 }}
+      initial={reducedMotion ? { width } : { width: 0 }}
       animate={{ width }}
-      transition={{ duration: 0.35, delay: index * 0.05, ease: "easeOut" }}
+      transition={
+        reducedMotion
+          ? { duration: 0 }
+          : { duration: 0.35, delay: index * 0.05, ease: "easeOut" }
+      }
     />
   );
 }
@@ -44,6 +50,7 @@ interface ValueLabelProps {
 }
 
 function ValueLabel({ x = 0, y = 0, width = 0, height = 0, index = 0, data }: ValueLabelProps) {
+  const reducedMotion = usePrefersReducedMotion();
   const row = data[index];
   if (!row) return null;
   const nx = Number(x);
@@ -56,9 +63,11 @@ function ValueLabel({ x = 0, y = 0, width = 0, height = 0, index = 0, data }: Va
       y={ny + nh / 2}
       dy={4}
       className="fill-foreground text-xs font-medium tabular-nums"
-      initial={{ opacity: 0 }}
+      initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.3, delay: index * 0.05 + 0.2 }}
+      transition={
+        reducedMotion ? { duration: 0 } : { duration: 0.3, delay: index * 0.05 + 0.2 }
+      }
     >
       {formatCurrency(row.total)}
       <tspan className="fill-muted-foreground"> ({row.pct.toFixed(0)}%)</tspan>

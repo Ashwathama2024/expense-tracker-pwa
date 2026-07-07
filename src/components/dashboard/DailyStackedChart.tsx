@@ -4,9 +4,11 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recha
 
 import { CATEGORIES, CATEGORY_META, categoryColor, type Category } from "@/lib/categories";
 import type { DailyStackedRow } from "@/lib/dashboard";
+import { usePrefersReducedMotion } from "@/lib/hooks";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 
 export function DailyStackedChart({ data }: { data: DailyStackedRow[] }) {
+  const reducedMotion = usePrefersReducedMotion();
   const hasData = data.some((row) =>
     CATEGORIES.some((cat) => (row[cat] ?? 0) > 0)
   );
@@ -75,7 +77,7 @@ export function DailyStackedChart({ data }: { data: DailyStackedRow[] }) {
             fill={categoryColor(cat)}
             stroke="var(--background)"
             strokeWidth={1}
-            isAnimationActive
+            isAnimationActive={!reducedMotion}
             animationDuration={300}
             animationBegin={i * 30}
             animationEasing="ease-out"
