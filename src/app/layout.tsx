@@ -8,6 +8,7 @@ import { BottomNav } from "@/components/nav/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiKeySettings } from "@/components/ApiKeySettings";
 import { BackupSettings } from "@/components/BackupSettings";
+import { HomeBranding } from "@/components/HomeBranding";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -85,10 +86,13 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <PinGate>
           <div className="flex min-h-screen flex-col pb-20">
-            <header className="flex items-center justify-end gap-1 px-4 pt-3">
-              <BackupSettings />
-              <ApiKeySettings />
-              <ThemeToggle />
+            <header className="flex items-center gap-1 px-4 pt-3">
+              <HomeBranding />
+              <div className="ml-auto flex items-center gap-1">
+                <BackupSettings />
+                <ApiKeySettings />
+                <ThemeToggle />
+              </div>
             </header>
             {children}
           </div>
