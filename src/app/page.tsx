@@ -24,6 +24,19 @@ export default function HomePage() {
   const [handlingShare, setHandlingShare] = useState(false);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect --
+       App shortcut ("long-press icon → Add expense") lands here with
+       ?action=add — open the sheet immediately instead of requiring a tap.
+       window.location isn't available during the server-prerendered render. */
+    if (window.location.search.includes("action=add")) {
+      window.history.replaceState(null, "", window.location.pathname);
+      setEditing(null);
+      setSheetOpen(true);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  useEffect(() => {
     if (!window.location.search.includes("shared=1")) return;
     window.history.replaceState(null, "", window.location.pathname);
 

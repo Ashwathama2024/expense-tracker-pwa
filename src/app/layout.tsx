@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { MotionConfig } from "framer-motion";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { Toaster } from "@/components/ui/sonner";
@@ -83,21 +82,19 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <MotionConfig reducedMotion="user">
-          <ServiceWorkerRegister />
-          <PinGate>
-            <div className="flex min-h-screen flex-col pb-20">
-              <header className="flex items-center justify-end gap-1 px-4 pt-3">
-                <BackupSettings />
-                <ApiKeySettings />
-                <ThemeToggle />
-              </header>
-              {children}
-            </div>
-            <BottomNav />
-          </PinGate>
-          <Toaster />
-        </MotionConfig>
+        <ServiceWorkerRegister />
+        <PinGate>
+          <div className="flex min-h-screen flex-col pb-20">
+            <header className="flex items-center justify-end gap-1 px-4 pt-3">
+              <BackupSettings />
+              <ApiKeySettings />
+              <ThemeToggle />
+            </header>
+            {children}
+          </div>
+          <BottomNav />
+        </PinGate>
+        <Toaster />
       </body>
     </html>
   );

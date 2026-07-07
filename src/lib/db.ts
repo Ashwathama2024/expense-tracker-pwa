@@ -15,9 +15,19 @@ export interface Budget {
   monthlyLimit: number;
 }
 
+export interface Goal {
+  id?: number;
+  name: string;
+  targetAmount: number;
+  targetDate?: string;
+  savedAmount: number;
+  createdAt: number;
+}
+
 const db = new Dexie("expense-tracker") as Dexie & {
   expenses: EntityTable<Expense, "id">;
   budgets: EntityTable<Budget, "category">;
+  goals: EntityTable<Goal, "id">;
 };
 
 db.version(1).stores({
@@ -27,6 +37,12 @@ db.version(1).stores({
 db.version(2).stores({
   expenses: "++id, amount, category, date, note, createdAt",
   budgets: "category",
+});
+
+db.version(3).stores({
+  expenses: "++id, amount, category, date, note, createdAt",
+  budgets: "category",
+  goals: "++id, name, createdAt",
 });
 
 export { db };

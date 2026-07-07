@@ -1,6 +1,16 @@
 import { CATEGORIES, type Category } from "./categories";
 import type { Expense } from "./db";
 
+export interface RecurringGroup {
+  key: string;
+  category: Category;
+  note: string;
+  months: string[];
+  lastAmount: number;
+  lastDate: string;
+  averageAmount: number;
+}
+
 function toISO(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
@@ -158,4 +168,40 @@ export function dayOfWeekTotals(expenses: Expense[], daysBack = 90): DayOfWeekPo
     occurrences: occurrences[day],
     average: occurrences[day] > 0 ? totals[day] / occurrences[day] : 0,
   }));
+}
+
+/** Flags category+note pairs that show up in 2+ of the last `monthsBack`
+ * months — the pattern a real recurring bill/subscription leaves, without
+ * requiring the amount to match exactly (bills like electricity vary). */
+export function detectRecurring(expenses: Expense[], monthsBack = 4): RecurringGroup[] {
+  const now = new Date();
+  const cutoffISO = toISO(new Date(now.getFullYear(), now.getMonth() - (monthsBack - 1), 1));
+
+  const groups = new Map<string, Expense[]>();
+  for (const e of expenses) {
+    const note = (e.note ?? "").trim();
+    if (!note || e.date < cutoffISO) continue;
+    const key = `${e.category}|${note.toLowerCase()}`;
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(e);
+    else groups.set(key, [e]);
+  }
+
+  const results: RecurringGroup[] = [];
+  for (const [key, group] of groups) {
+    const months = Array.from(new Set(group.map((e) => monthKey(e.date)))).sort();
+    if (months.length < 2) continue;
+    const sorted = [...group].sort((a, b) => b.date.localeCompare(a.date));
+    results.push({
+      key,
+      category: group[0].category,
+      note: group[0].note!.trim(),
+      months,
+      lastAmount: sorted[0].amount,
+      lastDate: sorted[0].date,
+      averageAmount: group.reduce((sum, e) => sum + e.amount, 0) / group.length,
+    });
+  }
+
+  return results.sort((a, b) => b.months.length - a.months.length || b.lastAmount - a.lastAmount);
 }

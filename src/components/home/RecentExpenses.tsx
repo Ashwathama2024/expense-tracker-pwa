@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { CATEGORY_META } from "@/lib/categories";
 import { CategoryDot } from "@/components/CategorySelect";
+import { usePrefersReducedMotion } from "@/lib/hooks";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import type { Expense } from "@/lib/db";
 
@@ -14,6 +15,7 @@ export function RecentExpenses({
   expenses: Expense[];
   onEdit: (expense: Expense) => void;
 }) {
+  const reducedMotion = usePrefersReducedMotion();
   if (expenses.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
@@ -43,11 +45,11 @@ export function RecentExpenses({
             return (
               <motion.button
                 key={expense.id}
-                layout
-                initial={{ opacity: 0, y: -10 }}
+                layout={!reducedMotion}
+                initial={reducedMotion ? false : { opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
+                transition={reducedMotion ? { duration: 0 } : { duration: 0.3, ease: "easeOut" }}
                 onClick={() => onEdit(expense)}
                 className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
               >

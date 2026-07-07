@@ -9,6 +9,8 @@ import { CategoryTrendGrid } from "@/components/insights/CategoryTrendGrid";
 import { DayOfWeekChart } from "@/components/insights/DayOfWeekChart";
 import { BudgetsDialog } from "@/components/insights/BudgetsDialog";
 import { BudgetStatusList } from "@/components/insights/BudgetStatusList";
+import { RecurringList } from "@/components/insights/RecurringList";
+import { GoalsCard } from "@/components/insights/GoalsCard";
 import { CategoryBarChart } from "@/components/dashboard/CategoryBarChart";
 import { CategoryLegend } from "@/components/dashboard/CategoryLegend";
 import { useAllExpenses, useBudgets } from "@/lib/hooks";
@@ -17,6 +19,7 @@ import { categoryTotals, filterByRange, resolveRange } from "@/lib/dashboard";
 import {
   cumulativeStats,
   dayOfWeekTotals,
+  detectRecurring,
   monthlyCategoryTotals,
   monthlyTotals,
 } from "@/lib/insights";
@@ -35,6 +38,7 @@ export default function InsightsPage() {
   const monthly = useMemo(() => monthlyTotals(expenses, 12), [expenses]);
   const monthlyByCategory = useMemo(() => monthlyCategoryTotals(expenses, 12), [expenses]);
   const weekdayPattern = useMemo(() => dayOfWeekTotals(expenses), [expenses]);
+  const recurring = useMemo(() => detectRecurring(expenses), [expenses]);
 
   const thisMonthExpenses = useMemo(
     () => filterByRange(expenses, resolveRange("this-month", { start: "", end: "" })),
@@ -123,6 +127,24 @@ export default function InsightsPage() {
         </CardHeader>
         <CardContent>
           <DayOfWeekChart data={weekdayPattern} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recurring</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RecurringList groups={recurring} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Savings goals</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <GoalsCard />
         </CardContent>
       </Card>
 

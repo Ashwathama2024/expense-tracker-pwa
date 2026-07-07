@@ -11,6 +11,10 @@ export function useBudgets() {
   return useLiveQuery(() => getAllBudgets(), []);
 }
 
+export function useGoals() {
+  return useLiveQuery(() => db.goals.orderBy("createdAt").reverse().toArray(), []);
+}
+
 function subscribeReducedMotion(callback: () => void) {
   const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
   mql.addEventListener("change", callback);

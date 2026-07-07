@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CategoryDot } from "@/components/CategorySelect";
 import { AddExpenseSheet } from "@/components/home/AddExpenseSheet";
@@ -33,6 +34,7 @@ type SortDir = "asc" | "desc";
 export default function HistoryPage() {
   const expenses = useAllExpenses();
   const [categoryFilter, setCategoryFilter] = useState<Category | "ALL">("ALL");
+  const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [editing, setEditing] = useState<Expense | null>(null);
@@ -43,6 +45,14 @@ export default function HistoryPage() {
     if (categoryFilter !== "ALL") {
       list = list.filter((e) => e.category === categoryFilter);
     }
+    const query = search.trim().toLowerCase();
+    if (query) {
+      list = list.filter(
+        (e) =>
+          (e.note ?? "").toLowerCase().includes(query) ||
+          CATEGORY_META[e.category].label.toLowerCase().includes(query)
+      );
+    }
     const sorted = [...list].sort((a, b) => {
       let cmp = 0;
       if (sortField === "date") cmp = a.date.localeCompare(b.date);
@@ -51,7 +61,7 @@ export default function HistoryPage() {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [expenses, categoryFilter, sortField, sortDir]);
+  }, [expenses, categoryFilter, search, sortField, sortDir]);
 
   function toggleSort(field: SortField) {
     if (field === sortField) {
@@ -93,6 +103,25 @@ export default function HistoryPage() {
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-6 pt-2">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search note or category…"
+          className="pl-10 pr-9"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Clear search"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as Category | "ALL")}>
         <SelectTrigger className="w-full">
           <SelectValue>
@@ -115,7 +144,7 @@ export default function HistoryPage() {
       {rows.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <p className="text-sm font-medium text-foreground">No expenses found</p>
-          <p className="text-sm text-muted-foreground">Try a different category filter.</p>
+          <p className="text-sm text-muted-foreground">Try a different search or category filter.</p>
         </div>
       ) : (
         <Table>

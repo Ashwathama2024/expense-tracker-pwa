@@ -1,21 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Delete } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Delete, Fingerprint } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  hasBiometricRegistered,
+  isBiometricAvailable,
+  registerBiometric,
+  verifyBiometric,
+} from "@/lib/webauthn";
 
 const PIN_KEY = "expense-tracker-pin";
 const UNLOCKED_KEY = "expense-tracker-unlocked";
 const PIN_LENGTH = 4;
 
-type Mode = "loading" | "unlocked" | "create" | "confirm" | "unlock";
+type Mode = "loading" | "unlocked" | "create" | "confirm" | "biometric-offer" | "unlock";
 
 export function PinGate({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<Mode>("loading");
   const [entry, setEntry] = useState("");
   const [firstEntry, setFirstEntry] = useState("");
   const [error, setError] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const autoPromptedRef = useRef(false);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect --
@@ -23,6 +33,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
        mode can't be computed during the (server-prerendered) first render. */
     const storedPin = localStorage.getItem(PIN_KEY);
     const unlocked = sessionStorage.getItem(UNLOCKED_KEY) === "1";
+    setBiometricEnabled(hasBiometricRegistered());
     if (unlocked) {
       setMode("unlocked");
     } else if (storedPin) {
@@ -31,7 +42,31 @@ export function PinGate({ children }: { children: React.ReactNode }) {
       setMode("create");
     }
     /* eslint-enable react-hooks/set-state-in-effect */
+
+    isBiometricAvailable().then(setBiometricAvailable);
   }, []);
+
+  const tryBiometricUnlock = useRef(async () => {
+    setBiometricBusy(true);
+    const ok = await verifyBiometric();
+    setBiometricBusy(false);
+    if (ok) {
+      sessionStorage.setItem(UNLOCKED_KEY, "1");
+      setMode("unlocked");
+    }
+  });
+
+  useEffect(() => {
+    if (
+      mode === "unlock" &&
+      biometricEnabled &&
+      biometricAvailable &&
+      !autoPromptedRef.current
+    ) {
+      autoPromptedRef.current = true;
+      tryBiometricUnlock.current();
+    }
+  }, [mode, biometricEnabled, biometricAvailable]);
 
   function pressDigit(d: string) {
     setError(false);
@@ -60,7 +95,13 @@ export function PinGate({ children }: { children: React.ReactNode }) {
       if (value === firstEntry) {
         localStorage.setItem(PIN_KEY, value);
         sessionStorage.setItem(UNLOCKED_KEY, "1");
-        setMode("unlocked");
+        // Don't trust the `biometricAvailable` state here — the check that
+        // sets it is async and may not have resolved yet if the user typed
+        // through PIN setup quickly.
+        isBiometricAvailable().then((available) => {
+          setBiometricAvailable(available);
+          setMode(available ? "biometric-offer" : "unlocked");
+        });
       } else {
         setError(true);
         setEntry("");
@@ -81,12 +122,52 @@ export function PinGate({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function enableBiometric() {
+    setBiometricBusy(true);
+    const ok = await registerBiometric();
+    setBiometricBusy(false);
+    if (ok) setBiometricEnabled(true);
+    setMode("unlocked");
+  }
+
   if (mode === "loading") {
     return null;
   }
 
   if (mode === "unlocked") {
     return <>{children}</>;
+  }
+
+  if (mode === "biometric-offer") {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-background px-6 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
+          <Fingerprint className="h-8 w-8 text-accent" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-xl font-semibold text-foreground">Use biometric unlock?</h1>
+          <p className="max-w-[280px] text-sm text-muted-foreground">
+            Unlock with your fingerprint or face instead of typing your PIN
+            every time. Your PIN still works as a backup.
+          </p>
+        </div>
+        <div className="flex w-full max-w-[280px] flex-col gap-2">
+          <button
+            onClick={enableBiometric}
+            disabled={biometricBusy}
+            className="flex h-12 items-center justify-center rounded-lg bg-accent text-sm font-medium text-accent-foreground transition-[transform] active:scale-[0.97] disabled:opacity-60"
+          >
+            Enable
+          </button>
+          <button
+            onClick={() => setMode("unlocked")}
+            className="flex h-12 items-center justify-center rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
+          >
+            Not now
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const heading =
@@ -150,6 +231,17 @@ export function PinGate({ children }: { children: React.ReactNode }) {
           <Delete className="h-6 w-6" />
         </button>
       </div>
+
+      {mode === "unlock" && biometricEnabled && biometricAvailable && (
+        <button
+          onClick={() => tryBiometricUnlock.current()}
+          disabled={biometricBusy}
+          className="flex items-center gap-2 text-sm font-medium text-accent disabled:opacity-60"
+        >
+          <Fingerprint className="h-4 w-4" />
+          {biometricBusy ? "Waiting…" : "Use biometric unlock"}
+        </button>
+      )}
     </div>
   );
 }
