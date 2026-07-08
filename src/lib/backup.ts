@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db, withDbTimeout } from "./db";
 import { CATEGORIES, type Category } from "./categories";
 
 interface BackupFile {
@@ -16,10 +16,9 @@ interface BackupFile {
 }
 
 export async function exportBackup() {
-  const [expenses, budgets] = await Promise.all([
-    db.expenses.toArray(),
-    db.budgets.toArray(),
-  ]);
+  const [expenses, budgets] = await withDbTimeout(
+    Promise.all([db.expenses.toArray(), db.budgets.toArray()])
+  );
 
   const backup: BackupFile = {
     app: "expense-tracker-pwa",
@@ -80,15 +79,20 @@ export async function importBackup(file: File): Promise<{ expenseCount: number; 
       CATEGORIES.includes(e.category) &&
       typeof e.date === "string"
   );
+  if (data.expenses.length > 0 && validExpenses.length === 0) {
+    throw new Error("That backup file's entries are in a format this version doesn't recognize.");
+  }
   if (validExpenses.length > 0) {
-    await db.expenses.bulkAdd(
-      validExpenses.map((e) => ({
-        amount: e.amount,
-        category: e.category,
-        date: e.date,
-        note: e.note,
-        createdAt: e.createdAt ?? Date.now(),
-      }))
+    await withDbTimeout(
+      db.expenses.bulkAdd(
+        validExpenses.map((e) => ({
+          amount: e.amount,
+          category: e.category,
+          date: e.date,
+          note: e.note,
+          createdAt: e.createdAt ?? Date.now(),
+        }))
+      )
     );
   }
 
@@ -96,7 +100,7 @@ export async function importBackup(file: File): Promise<{ expenseCount: number; 
     (b) => CATEGORIES.includes(b.category) && typeof b.monthlyLimit === "number"
   );
   if (validBudgets.length > 0) {
-    await db.budgets.bulkPut(validBudgets);
+    await withDbTimeout(db.budgets.bulkPut(validBudgets));
   }
 
   return { expenseCount: validExpenses.length, budgetCount: validBudgets.length };

@@ -24,8 +24,8 @@ export function BackupSettings() {
     try {
       const { expenseCount, budgetCount } = await exportBackup();
       toast.success(`Exported ${expenseCount} expenses, ${budgetCount} budgets`);
-    } catch {
-      toast.error("Couldn't export a backup.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't export a backup.");
     } finally {
       setBusy(false);
     }

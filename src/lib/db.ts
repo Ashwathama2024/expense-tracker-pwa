@@ -45,4 +45,33 @@ db.version(3).stores({
   goals: "++id, name, createdAt",
 });
 
+// If another tab/window still has this app open on an older schema version,
+// IndexedDB blocks the upgrade transaction until that connection closes —
+// by default that just hangs forever with no error. Surface it instead.
+db.on("blocked", () => {
+  console.warn(
+    "expense-tracker: database open blocked by another open tab/window running an older version."
+  );
+});
+
+/** Every db write on the hot paths (adding/importing expenses) goes through
+ * this so a blocked/stuck connection fails loud with a fixable message
+ * instead of leaving the UI stuck on a spinner indefinitely. */
+export async function withDbTimeout<T>(promise: Promise<T>, ms = 8000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              "Couldn't reach the local database. Close this app in any other open tabs or windows, then reload and try again."
+            )
+          ),
+        ms
+      )
+    ),
+  ]);
+}
+
 export { db };

@@ -109,8 +109,8 @@ export function AddExpenseSheet({
         toast.success("Expense added");
       }
       onOpenChange(false);
-    } catch {
-      toast.error("Couldn't save that expense.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save that expense.");
     } finally {
       setSaving(false);
     }

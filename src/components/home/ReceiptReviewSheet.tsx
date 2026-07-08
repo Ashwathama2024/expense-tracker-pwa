@@ -86,8 +86,8 @@ export function ReceiptReviewSheet({
       );
       onOpenChange(false);
       onSaved();
-    } catch {
-      toast.error("Couldn't save these expenses.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save these expenses.");
     } finally {
       setSaving(false);
     }
